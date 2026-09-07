@@ -1,0 +1,12 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\jessy\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+  "python.testing.pytestArgs": [
+    "backend/tests"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "${workspaceFolder}",
+    "PATH": "C:\\Users\\jessy\\AppData\\Local\\Programs\\Python\\Python313\\Scripts;C:\\Users\\jessy\\AppData\\Local\\Programs\\nodejs;${env:PATH}"
+  }
+}
