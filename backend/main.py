@@ -9,7 +9,7 @@ from backend.database.session import engine, Base, SessionLocal
 from backend.services.seed_generator import seed_database
 from backend.routers import (
     cases, evidence, reviews, failures, ingestion,
-    experiment, feedback, audit, dashboard, settings, auth
+    experiment, feedback, audit, dashboard, settings, auth, stream, simulator
 )
 
 @asynccontextmanager
@@ -52,6 +52,8 @@ app.include_router(feedback.router)
 app.include_router(audit.router)
 app.include_router(settings.router)
 app.include_router(auth.router)
+app.include_router(stream.router)
+app.include_router(simulator.router)
 
 @app.get("/api-info")
 def api_info():

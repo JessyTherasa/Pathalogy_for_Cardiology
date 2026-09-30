@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Clock,
   FlaskConical,
@@ -16,7 +16,10 @@ import {
   Lock,
   PlusCircle,
   CheckCircle2,
-  FileText
+  FileText,
+  Activity,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { CaseItem, EvidenceEventItem, LineageGraphResponse, ReviewDecisionItem, AuditLogItem } from '../types';
 import {
@@ -35,6 +38,7 @@ import { ReviewFormModal } from '../components/review/ReviewFormModal';
 import { FreshnessDot } from '../components/common/FreshnessDot';
 import { ModalityIcon } from '../components/common/ModalityIcon';
 import { Badge } from '../components/common/Badge';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface CaseWorkspaceProps {
   caseId: string;
@@ -64,6 +68,14 @@ export const CaseWorkspace: React.FC<CaseWorkspaceProps> = ({
   // Modals
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  // Real-time state
+  const [liveNotification, setLiveNotification] = useState<string | null>(null);
+  const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const API = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
+  const WS_URL = API.replace('http', 'ws') + '/ws/events';
 
   // ─── Role-conditional data loading ────────────────────────────────────────
   // Only fetch what the authenticated role is authorized to access.
@@ -112,6 +124,34 @@ export const CaseWorkspace: React.FC<CaseWorkspaceProps> = ({
       setLoading(false);
     }
   };
+
+  // Real-time refresh: reload timeline when this case's events arrive via WebSocket
+  const refreshTimeline = useCallback(async () => {
+    try {
+      const needsTimeline = ['Cardiologist', 'Reviewer', 'Pathologist', 'Imaging Specialist', 'Molecular Specialist'].includes(currentRole);
+      if (needsTimeline) {
+        const tl = await getCaseTimeline(caseId, sortOrder, selectedModality, currentRole);
+        setTimelineEvents(tl.events ?? []);
+      }
+      const detail = await getCaseDetail(caseId, currentRole);
+      setCaseDetail(detail);
+    } catch { /* non-fatal */ }
+  }, [caseId, currentRole, sortOrder, selectedModality]);
+
+  const handleWsMessage = useCallback((msg: any) => {
+    if (msg.type === 'new_event' && (msg.case_id === caseId || !msg.case_id)) {
+      const notif = msg.message || `New ${msg.modality || 'diagnostic'} evidence received`;
+      setLiveNotification(notif);
+      if (notifTimer.current) clearTimeout(notifTimer.current);
+      notifTimer.current = setTimeout(() => setLiveNotification(null), 5000);
+
+      // Debounced timeline reload
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(() => refreshTimeline(), 800);
+    }
+  }, [caseId, refreshTimeline]);
+
+  const { isConnected: wsConnected } = useWebSocket({ url: WS_URL, onMessage: handleWsMessage });
 
   useEffect(() => {
     loadCaseData();
@@ -169,6 +209,15 @@ export const CaseWorkspace: React.FC<CaseWorkspaceProps> = ({
 
   return (
     <div className="space-y-5">
+      {/* Live WebSocket notification */}
+      {liveNotification && (
+        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold px-4 py-2.5 rounded-xl animate-pulse">
+          <Activity size={14} className="text-emerald-600" />
+          {liveNotification}
+          <span className="ml-auto text-emerald-500 text-[10px]">Timeline updated automatically</span>
+        </div>
+      )}
+
       {/* Back navigation & Quick actions */}
       <div className="flex items-center justify-between">
         <button
@@ -180,6 +229,11 @@ export const CaseWorkspace: React.FC<CaseWorkspaceProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
+          {/* WS indicator */}
+          <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${wsConnected ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+            {wsConnected ? <Wifi size={10} /> : <WifiOff size={10} />}
+            {wsConnected ? 'Live' : 'Offline'}
+          </span>
           {['Cardiologist', 'Reviewer'].includes(currentRole) && (
             <button
               onClick={() => setIsReviewModalOpen(true)}

@@ -181,3 +181,20 @@ export const regenerateDataset = (role: string) => {
     method: 'POST'
   }, role);
 };
+
+// ─── Simulator ────────────────────────────────────────────────────────────────
+export const startSimulator = (modality: string, frequency: string, caseId?: string) => {
+  const params = new URLSearchParams({ modality, frequency });
+  if (caseId) params.set('case_id', caseId);
+  return apiRequest<any>(`/simulator/start?${params}`, { method: 'POST' });
+};
+
+export const stopSimulator = () => apiRequest<any>('/simulator/stop', { method: 'POST' });
+
+export const getSimulatorStatus = () => apiRequest<any>('/simulator/status', { method: 'GET' });
+
+export const generateSingleSimEvent = (modality: string, caseId?: string) => {
+  const params = new URLSearchParams({ modality });
+  if (caseId) params.set('case_id', caseId);
+  return apiRequest<any>(`/simulator/generate-one?${params}`, { method: 'POST' });
+};

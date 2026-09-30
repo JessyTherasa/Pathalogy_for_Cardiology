@@ -9,6 +9,7 @@ from backend.models import Case, EvidenceEvent, Specimen
 from backend.services.audit_service import log_audit
 from backend.services.freshness_engine import calculate_freshness
 from backend.routers.rbac import require_roles, ADMIN_ONLY
+from backend.routers.stream import manager
 
 router = APIRouter(
     prefix="/ingestion",
@@ -71,6 +72,27 @@ def generate_vendor_event(
         db.add(evt)
         db.commit()
         log_audit(db, user_role, "Data Ingested", f"{cid}:{evt.event_id}", "SUCCESS", "Generated synthetic pathology event", cid)
+        try:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(manager.broadcast({
+                    'type': 'new_event',
+                    'case_id': cid,
+                    'modality': evt.modality,
+                    'event_id': evt.event_id,
+                    'vendor': evt.vendor,
+                    'test_name': evt.test_name,
+                    'result_summary': evt.result_summary,
+                    'interpretation': getattr(evt, 'interpretation', None),
+                    'freshness': evt.freshness,
+                    'validation_status': evt.validation_status,
+                    'event_timestamp': evt.event_timestamp.isoformat() if evt.event_timestamp else None,
+                    'ingestion_timestamp': evt.ingestion_timestamp.isoformat() if hasattr(evt, 'ingestion_timestamp') and evt.ingestion_timestamp else None,
+                    'message': f'New {evt.modality} evidence received for {cid}'
+                }))
+        except Exception:
+            pass  # Non-fatal: real-time broadcast is best-effort
         return {"status": "success", "event_id": evt.event_id, "case_id": cid, "modality": "Pathology"}
 
     elif action_type == "imaging":

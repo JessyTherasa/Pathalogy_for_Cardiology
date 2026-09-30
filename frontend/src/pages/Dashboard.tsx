@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Search,
   Filter,
@@ -12,13 +12,16 @@ import {
   Sparkles,
   ShieldAlert,
   FileSpreadsheet,
-  Activity
+  Activity,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { CaseItem, DashboardMetrics } from '../types';
 import { getCases, getDashboardMetrics } from '../services/api';
 import { useRole } from '../context/RoleContext';
 import { FreshnessDot } from '../components/common/FreshnessDot';
 import { Badge } from '../components/common/Badge';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface DashboardProps {
   onSelectCase: (caseId: string) => void;
@@ -36,6 +39,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectCase }) => {
   const [selectedFreshness, setSelectedFreshness] = useState('All');
   const [selectedRisk, setSelectedRisk] = useState('All');
   const [selectedConsent, setSelectedConsent] = useState('All');
+  const [liveNotification, setLiveNotification] = useState<string | null>(null);
+  const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const API = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
+  const WS_URL = API.replace('http', 'ws') + '/ws/events';
 
   const loadData = async () => {
     setLoading(true);
@@ -77,6 +86,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectCase }) => {
     currentRole
   ]);
 
+  // Real-time WebSocket: auto-refresh metrics when new events arrive
+  const handleWsMessage = useCallback((msg: any) => {
+    if (msg.type === 'new_event') {
+      const notif = msg.message || `New ${msg.modality || 'diagnostic'} evidence received`;
+      setLiveNotification(notif);
+      if (notifTimer.current) clearTimeout(notifTimer.current);
+      notifTimer.current = setTimeout(() => setLiveNotification(null), 5000);
+
+      // Debounced reload: wait 1s so rapid events don't cause reload storms
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(() => loadData(), 1000);
+    }
+  }, [currentRole]);
+
+  const { isConnected: wsConnected } = useWebSocket({ url: WS_URL, onMessage: handleWsMessage });
+
   const demoCases = [
     {
       id: 'CASE-1001',
@@ -117,6 +142,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectCase }) => {
 
   return (
     <div className="space-y-6">
+      {/* Live notification toast */}
+      {liveNotification && (
+        <div className="fixed top-4 right-4 z-50 bg-emerald-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 animate-pulse">
+          <Activity size={15} />
+          {liveNotification}
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-slate-900 to-sky-950 text-white p-6 rounded-2xl shadow-md border border-slate-800 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -136,6 +169,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectCase }) => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* WS live indicator */}
+          <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${wsConnected ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-slate-500/20 text-slate-400 border-slate-600/30'}`}>
+            {wsConnected ? <Wifi size={11} /> : <WifiOff size={11} />}
+            {wsConnected ? 'Live' : 'Offline'}
+          </div>
           <div className="text-right">
             <div className="text-[11px] text-slate-400 font-mono">SYNTHETIC DATASET</div>
             <div className="text-lg font-black text-sky-400">
