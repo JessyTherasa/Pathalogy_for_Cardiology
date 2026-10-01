@@ -273,3 +273,38 @@ def _serialize_event(ev) -> dict:
         "status": ev.validation_status,
     }
 
+
+# --- Create Case endpoint ---
+@router.post("")
+def create_case(
+    age_range: Optional[str] = "40-49",
+    gender: Optional[str] = "M",
+    risk_level: Optional[str] = "Moderate",
+    consent_status: Optional[str] = "Granted",
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_roles(*ALL_CLINICAL))
+):
+    """Create a new case. All authenticated roles can add cases."""
+    import random as _random
+    now = datetime.utcnow()
+    new_id = f"CASE-{_random.randint(2000, 9999)}"
+    attempts = 0
+    while db.query(Case).filter(Case.case_id == new_id).first() and attempts < 20:
+        new_id = f"CASE-{_random.randint(2000, 9999)}"
+        attempts += 1
+    c = Case(
+        case_id=new_id,
+        patient_synthetic_id=f"PT-{new_id.split('-')[1]}",
+        age_range=age_range,
+        gender=gender,
+        consent_status=consent_status,
+        risk_level=risk_level,
+        status="Incomplete",
+        created_at=now
+    )
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    log_audit(db, current_user["role"], "Case Created", new_id, "SUCCESS",
+              f"New case created by {current_user['role']}", new_id)
+    return {"status": "success", "case_id": new_id, "message": f"Case {new_id} created successfully"}

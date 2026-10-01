@@ -87,9 +87,10 @@ export const ROLE_PAGE_ACCESS: Record<UserRole, string[]> = {
     'workflow_map', 'feedback'
   ],
 
-  // Administrator: system/admin access — no clinical editing by default
+  // Administrator: full system access — all areas
   Administrator: [
-    'dashboard', 'audit', 'failures', 'ingestion', 'experiment',
+    'dashboard', 'cases', 'timeline', 'pathology', 'imaging', 'molecular',
+    'lineage', 'reviews', 'audit', 'failures', 'ingestion', 'experiment',
     'error_analysis', 'workflow_map', 'feedback', 'settings'
   ]
 };
@@ -102,7 +103,7 @@ export const ROLE_WORKSPACE_TABS: Record<UserRole, string[]> = {
   'Imaging Specialist': ['overview', 'imaging'],
   'Molecular Specialist': ['overview', 'molecular', 'lineage'],
   Reviewer:           ['overview', 'timeline', 'pathology', 'imaging', 'molecular', 'lineage', 'reviews', 'audit'],
-  Administrator:      ['overview', 'audit']
+  Administrator:      ['overview', 'timeline', 'pathology', 'imaging', 'molecular', 'lineage', 'reviews', 'audit']
 };
 
 // ─── Context ──────────────────────────────────────────────────────────────────

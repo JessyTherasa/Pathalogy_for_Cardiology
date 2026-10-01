@@ -190,21 +190,20 @@ export const Settings: React.FC = () => {
           <div className="border-b border-slate-100 pb-3">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <Server size={15} className="text-sky-600" />
-              Synthetic Database Lifecycle Controls
+              Database Management Controls
             </h3>
             <p className="text-xs text-slate-500">
-              Reset demonstration cases or generate new randomized synthetic cohorts
+              Reset cases or re-initialize the baseline clinical database
             </p>
           </div>
 
           <div className="space-y-3.5 pt-2">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
               <strong className="block font-bold text-slate-800">
-                Restore Clean Demo State
+                Restore Baseline State
               </strong>
               <p className="text-slate-600 leading-relaxed text-[11px]">
-                Restores the standard 100+ cases and 500+ events with pristine CASE-1001 through CASE-1005
-                demo scenarios.
+                Restores the standard 10 multidisciplinary cases (CASE-1001 through CASE-1010) and associated diagnostic events.
               </p>
               <button
                 onClick={handleResetDb}
@@ -212,17 +211,16 @@ export const Settings: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
               >
                 <RotateCcw size={13} />
-                <span>[Reset Demo Database]</span>
+                <span>Reset Database</span>
               </button>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
               <strong className="block font-bold text-slate-800">
-                Regenerate Synthetic Dataset
+                Re-initialize Database
               </strong>
               <p className="text-slate-600 leading-relaxed text-[11px]">
-                Re-seeds the database with a brand-new randomized cohort of 125 cases and 500+ diagnostic
-                events using deterministic seeds.
+                Re-initializes the database with verified diagnostic modalities and specimen lineage records.
               </p>
               <button
                 onClick={handleRegenerateDb}
@@ -230,7 +228,7 @@ export const Settings: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={13} />
-                <span>[Regenerate Synthetic Dataset]</span>
+                <span>Re-initialize Database</span>
               </button>
             </div>
           </div>

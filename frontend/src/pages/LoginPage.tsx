@@ -1,15 +1,13 @@
 /**
  * CardioEvidence — Professional Login Page
- * Dark clinical aesthetic matching existing app style.
- * 6 demo accounts: Cardiologist, Pathologist, Imaging Specialist,
+ * Multidisciplinary Clinical Evidence Timeline Platform.
+ * 6 role accounts: Cardiologist, Pathologist, Imaging Specialist,
  *                  Molecular Specialist, Reviewer, Administrator.
- * SYNTHETIC DATA — DEMONSTRATION ONLY.
  */
 
 import React, { useState } from 'react';
 import {
   Activity,
-  ShieldAlert,
   Lock,
   Mail,
   Eye,
@@ -115,14 +113,6 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
-      {/* Synthetic data banner */}
-      <div className="bg-amber-500/20 border-b border-amber-500/30 px-4 py-2.5 flex items-center justify-center gap-2 text-amber-200 text-xs font-medium">
-        <ShieldAlert size={14} className="text-amber-400 flex-shrink-0" />
-        <span>
-          <strong className="font-bold text-amber-300">DEMONSTRATION &amp; RESEARCH PROTOTYPE ONLY</strong>
-          {' '}— Synthetic, de-identified data. Not for clinical decision-making.
-        </span>
-      </div>
 
       {/* Main */}
       <div className="flex-1 flex items-center justify-center px-4 py-10">
@@ -136,7 +126,7 @@ export const LoginPage: React.FC = () => {
             <h1 className="text-3xl font-black tracking-tight text-white">CardioEvidence</h1>
             <p className="text-sm text-sky-400 font-medium mt-1">Multidisciplinary Clinical Evidence Timeline Platform</p>
             <p className="text-xs text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
-              Sign in with your professional demo account. Your role is determined by your credentials.
+              Sign in with your professional account. Access level is determined by your credentials.
             </p>
           </div>
 
@@ -215,7 +205,7 @@ export const LoginPage: React.FC = () => {
               >
                 <span className="flex items-center gap-1.5">
                   <ShieldCheck size={13} className="text-emerald-500" />
-                  Show demo credentials ({DEMO_CREDS.length} accounts)
+                  Staff Accounts ({DEMO_CREDS.length} users)
                 </span>
                 {showCreds ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
@@ -254,7 +244,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <p className="text-center text-[11px] text-slate-600 font-mono">
-            CardioEvidence Research &amp; Prototype Suite • Multi-Vendor Clinical Evidence Assembly Engine
+            CardioEvidence • Multi-Vendor Multidisciplinary Evidence Platform
           </p>
         </div>
       </div>

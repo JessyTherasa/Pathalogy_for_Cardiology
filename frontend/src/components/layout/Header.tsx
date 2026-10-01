@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Activity,
-  ShieldAlert,
   RotateCcw,
   CheckCircle2,
   LogOut,
@@ -26,14 +25,14 @@ const ROLE_COLOUR: Record<string, string> = {
   Administrator:          'bg-rose-600',
 };
 
-// Role → workspace context label shown in header (makes demo obvious at a glance)
+// Role → workspace context label shown in header
 const ROLE_WORKSPACE_LABEL: Record<string, string> = {
   Cardiologist:           'Access: Multidisciplinary',
   Pathologist:            'Workspace: Pathology',
   'Imaging Specialist':   'Workspace: Imaging',
   'Molecular Specialist': 'Workspace: Molecular',
   Reviewer:               'Access: Review & Audit',
-  Administrator:          'Access: System Admin',
+  Administrator:          'Access: Full System',
 };
 
 export const Header: React.FC<HeaderProps> = ({ onRefreshData }) => {
@@ -48,11 +47,11 @@ export const Header: React.FC<HeaderProps> = ({ onRefreshData }) => {
   const initials  = user?.initials ?? currentRole[0];
 
   const handleReset = async () => {
-    if (confirm('Reset demo database to clean initial state (100+ cases, 500+ events)?')) {
+    if (confirm('Reset database to initial state with 10 cases?')) {
       try {
         setIsResetting(true);
         await resetDatabase(currentRole);
-        setResetMessage('Demo reset successfully!');
+        setResetMessage('Data reset successfully!');
         if (onRefreshData) onRefreshData();
         setTimeout(() => setResetMessage(null), 3000);
       } catch (err: any) {
@@ -70,25 +69,13 @@ export const Header: React.FC<HeaderProps> = ({ onRefreshData }) => {
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
-      {/* Synthetic data notice banner */}
-      <div className="bg-amber-500 text-slate-950 px-4 py-1 text-xs font-semibold flex items-center justify-between tracking-wide">
-        <div className="flex items-center gap-2">
-          <ShieldAlert size={14} className="text-slate-950" />
-          <span>SYNTHETIC DATA — DEMONSTRATION &amp; RESEARCH WORKFLOW PROTOTYPE ONLY • NOT FOR CLINICAL DECISION-MAKING</span>
-        </div>
-        <div className="flex items-center gap-4 text-xs font-normal">
-          <span>De-identified synthetic cohort</span>
-          <span className="bg-slate-950 text-white px-2 py-0.5 rounded font-mono text-[10px]">v1.0-DEMO</span>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
           {/* Brand */}
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-100">
-              <Activity size={22} className="animate-pulse" />
+              <Activity size={22} />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -98,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({ onRefreshData }) => {
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Unified Diagnostic Integration Engine (Pathology • Imaging • Molecular)
+                Multidisciplinary Diagnostic Evidence Platform
               </p>
             </div>
           </div>
@@ -111,16 +98,18 @@ export const Header: React.FC<HeaderProps> = ({ onRefreshData }) => {
               </span>
             )}
 
-            {/* Reset demo button */}
-            <button
-              onClick={handleReset}
-              disabled={isResetting}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors disabled:opacity-50"
-              title="Reset Demo Database"
-            >
-              <RotateCcw size={13} className={isResetting ? 'animate-spin' : ''} />
-              <span>{isResetting ? 'Resetting...' : 'Reset Demo'}</span>
-            </button>
+            {/* Reset button — Admin only in UI */}
+            {currentRole === 'Administrator' && (
+              <button
+                onClick={handleReset}
+                disabled={isResetting}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors disabled:opacity-50"
+                title="Reset Database"
+              >
+                <RotateCcw size={13} className={isResetting ? 'animate-spin' : ''} />
+                <span>{isResetting ? 'Resetting...' : 'Reset Data'}</span>
+              </button>
+            )}
 
             {/* ── User profile chip + dropdown ── */}
             <div className="relative">

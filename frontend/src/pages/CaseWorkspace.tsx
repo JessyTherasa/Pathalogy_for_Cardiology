@@ -89,23 +89,22 @@ export const CaseWorkspace: React.FC<CaseWorkspaceProps> = ({
       const detail = await getCaseDetail(caseId, currentRole);
       setCaseDetail(detail);
 
-      // Timeline — Cardiologist, Reviewer get full timeline.
-      // Specialists get modality-filtered timeline from the backend.
-      const needsTimeline = ['Cardiologist', 'Reviewer', 'Pathologist', 'Imaging Specialist', 'Molecular Specialist'].includes(currentRole);
+      // Timeline — full access roles
+      const needsTimeline = ['Cardiologist', 'Reviewer', 'Pathologist', 'Imaging Specialist', 'Molecular Specialist', 'Administrator'].includes(currentRole);
       if (needsTimeline) {
         const tl = await getCaseTimeline(caseId, sortOrder, selectedModality, currentRole);
         setTimelineEvents(tl.events ?? []);
       }
 
-      // Specimens — Cardiologist, Pathologist, Molecular Specialist, Reviewer
-      const needsSpecimens = ['Cardiologist', 'Pathologist', 'Molecular Specialist', 'Reviewer'].includes(currentRole);
+      // Specimens — Cardiologist, Pathologist, Molecular Specialist, Reviewer, Administrator
+      const needsSpecimens = ['Cardiologist', 'Pathologist', 'Molecular Specialist', 'Reviewer', 'Administrator'].includes(currentRole);
       if (needsSpecimens) {
         const specs = await getCaseSpecimens(caseId, currentRole);
         setSpecimenLineage(specs);
       }
 
-      // Reviews — Cardiologist and Reviewer only
-      const needsReviews = ['Cardiologist', 'Reviewer'].includes(currentRole);
+      // Reviews — Cardiologist, Reviewer, Administrator
+      const needsReviews = ['Cardiologist', 'Reviewer', 'Administrator'].includes(currentRole);
       if (needsReviews) {
         const revs = await getCaseReviews(caseId, currentRole);
         setReviews(revs);
@@ -128,7 +127,7 @@ export const CaseWorkspace: React.FC<CaseWorkspaceProps> = ({
   // Real-time refresh: reload timeline when this case's events arrive via WebSocket
   const refreshTimeline = useCallback(async () => {
     try {
-      const needsTimeline = ['Cardiologist', 'Reviewer', 'Pathologist', 'Imaging Specialist', 'Molecular Specialist'].includes(currentRole);
+      const needsTimeline = ['Cardiologist', 'Reviewer', 'Pathologist', 'Imaging Specialist', 'Molecular Specialist', 'Administrator'].includes(currentRole);
       if (needsTimeline) {
         const tl = await getCaseTimeline(caseId, sortOrder, selectedModality, currentRole);
         setTimelineEvents(tl.events ?? []);

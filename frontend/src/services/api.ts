@@ -198,3 +198,19 @@ export const generateSingleSimEvent = (modality: string, caseId?: string) => {
   if (caseId) params.set('case_id', caseId);
   return apiRequest<any>(`/simulator/generate-one?${params}`, { method: 'POST' });
 };
+
+// --- Case Creation ---
+export const createCase = (params: {
+  age_range?: string;
+  gender?: string;
+  risk_level?: string;
+  consent_status?: string;
+}) => {
+  const p = new URLSearchParams();
+  if (params.age_range) p.set('age_range', params.age_range);
+  if (params.gender) p.set('gender', params.gender);
+  if (params.risk_level) p.set('risk_level', params.risk_level);
+  if (params.consent_status) p.set('consent_status', params.consent_status);
+  return apiRequest<any>(`/cases?${p.toString()}`, { method: 'POST' });
+};
+

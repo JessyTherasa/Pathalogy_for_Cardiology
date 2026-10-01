@@ -9,10 +9,10 @@ from backend.models import (
 
 def seed_database(db: Session, force: bool = False):
     """
-    Seeds database with 100+ synthetic cases, 500+ evidence events,
-    specimens, vendors, audit logs, and demo failure scenarios.
+    Seeds database with predefined cases, evidence events,
+    specimens, vendors, audit logs, and clinical scenarios.
     """
-    if not force and db.query(Case).count() >= 100:
+    if not force and db.query(Case).count() >= 10:
         return
 
     # Clear existing tables if force
@@ -407,237 +407,183 @@ def seed_database(db: Session, force: bool = False):
         review_status="Unreviewed"
     ))
 
-    # --- Generate Additional 95+ Synthetic Cases ---
-    random.seed(42)
+    # --- CASE-1006: Stale Imaging + Stale Pathology (>35d) ---
+    db.add(Case(
+        case_id="CASE-1006", patient_synthetic_id="PT-1006",
+        age_range="70-79", gender="M", consent_status="Granted",
+        risk_level="High", status="Needs Review",
+        created_at=now - timedelta(days=45)
+    ))
+    db.flush()
+    db.add(EvidenceEvent(
+        event_id="EVT-1006-PATH", case_id="CASE-1006",
+        modality="Pathology", vendor="Vendor A — CoreLab",
+        test_name="NT-proBNP Biomarker",
+        result_summary="3120 pg/mL (Significantly Elevated)",
+        interpretation="Abnormal",
+        event_timestamp=now - timedelta(days=40),
+        freshness="Very Stale", validation_status="Valid"
+    ))
+    db.add(EvidenceEvent(
+        event_id="EVT-1006-IMG", case_id="CASE-1006",
+        modality="Imaging", vendor="Vendor B — CardioVision",
+        test_name="Transthoracic Echocardiogram",
+        result_summary="LVEF 32%; severe systolic dysfunction; dilated LV",
+        interpretation="Abnormal",
+        event_timestamp=now - timedelta(days=35),
+        freshness="Very Stale", validation_status="Valid"
+    ))
 
-    path_tests = [
-        ("High-Sensitivity Troponin I", "12 ng/L (Ref < 16 ng/L)", "Normal"),
-        ("Troponin T Serial", "84 ng/L (Elevated)", "Abnormal"),
-        ("NT-proBNP Biomarker", "120 pg/mL (Normal)", "Normal"),
-        ("NT-proBNP Biomarker", "1850 pg/mL (Significantly Elevated)", "Abnormal"),
-        ("Endomyocardial Biopsy Histology", "No acute cellular rejection (ISHLT Grade 0R)", "Normal"),
-        ("Cardiac CK-MB Mass", "3.1 ng/mL (Normal)", "Normal"),
-        ("Lipid Panel & hs-CRP", "LDL 142 mg/dL, hs-CRP 3.8 mg/L (High vascular risk)", "Abnormal")
-    ]
+    # --- CASE-1007: Complete — Low Risk ---
+    db.add(Case(
+        case_id="CASE-1007", patient_synthetic_id="PT-1007",
+        age_range="35-44", gender="F", consent_status="Granted",
+        risk_level="Low", status="Complete",
+        created_at=now - timedelta(days=3)
+    ))
+    db.flush()
+    s1007 = Specimen(specimen_id="SPEC-007", case_id="CASE-1007",
+        source="Venous Blood", specimen_type="Plasma",
+        collection_timestamp=now - timedelta(days=3))
+    db.add(s1007)
+    db.flush()
+    db.add(EvidenceEvent(
+        event_id="EVT-1007-PATH", case_id="CASE-1007",
+        modality="Pathology", vendor="Vendor A — CoreLab",
+        test_name="High-Sensitivity Troponin I",
+        result_summary="8 ng/L (Reference: < 16 ng/L)",
+        interpretation="Normal", freshness="Current",
+        event_timestamp=now - timedelta(days=2),
+        specimen_id="SPEC-007", validation_status="Valid"
+    ))
+    db.add(EvidenceEvent(
+        event_id="EVT-1007-IMG", case_id="CASE-1007",
+        modality="Imaging", vendor="Vendor E — UltraEcho",
+        test_name="Stress Echocardiogram",
+        result_summary="No inducible ischemia; LVEF response 55%→68%",
+        interpretation="Normal", freshness="Current",
+        event_timestamp=now - timedelta(days=1, hours=5),
+        validation_status="Valid"
+    ))
+    db.add(EvidenceEvent(
+        event_id="EVT-1007-MOL", case_id="CASE-1007",
+        modality="Molecular", vendor="Vendor C — GeneCore",
+        test_name="Hypertrophic Cardiomyopathy Panel (MYBPC3)",
+        result_summary="No pathogenic variants detected",
+        interpretation="Normal", freshness="Current",
+        event_timestamp=now - timedelta(hours=18),
+        specimen_id="SPEC-007", validation_status="Valid"
+    ))
 
-    img_tests = [
-        ("Transthoracic Echocardiogram", "LVEF 60%; normal wall motion; mild diastolic dysfunction", "Normal"),
-        ("Stress Echocardiogram", "No inducible ischemia; LVEF response from 55% to 68%", "Normal"),
-        ("Coronary CT Angiography", "CAD-RADS 1: Minimal non-obstructive coronary disease (<25%)", "Normal"),
-        ("Cardiac Magnetic Resonance (CMR)", "Late gadolinium enhancement in mid-myocardial septum (non-ischemic pattern)", "Abnormal"),
-        ("Nuclear SPECT Myocardial Perfusion", "Small reversible apical perfusion defect; mild ischemia", "Abnormal"),
-        ("Transesophageal Echocardiogram", "No intracardiac thrombus; LAA velocity 0.65 m/s", "Normal")
-    ]
+    # --- CASE-1008: Missing Imaging ---
+    db.add(Case(
+        case_id="CASE-1008", patient_synthetic_id="PT-1008",
+        age_range="55-64", gender="M", consent_status="Granted",
+        risk_level="High", status="Incomplete",
+        created_at=now - timedelta(days=2)
+    ))
+    db.flush()
+    db.add(EvidenceEvent(
+        event_id="EVT-1008-PATH", case_id="CASE-1008",
+        modality="Pathology", vendor="Vendor D — BioPulse POC",
+        test_name="Bedside Troponin & BNP Panel",
+        result_summary="Troponin I: 240 ng/L (Elevated); BNP: 890 pg/mL",
+        interpretation="Abnormal", freshness="Current",
+        event_timestamp=now - timedelta(hours=30),
+        validation_status="Valid"
+    ))
+    db.add(EvidenceEvent(
+        event_id="EVT-1008-MOL", case_id="CASE-1008",
+        modality="Molecular", vendor="Vendor C — GeneCore",
+        test_name="Dilated Cardiomyopathy Panel (LMNA)",
+        result_summary="LMNA c.357+1G>A Heterozygous Splice Variant — Pathogenic",
+        interpretation="Pathogenic", freshness="Current",
+        event_timestamp=now - timedelta(hours=6),
+        validation_status="Valid"
+    ))
 
-    mol_tests = [
-        ("Hereditary Arrhythmia Panel (56 genes)", "No clinically significant sequence variants detected", "Benign / Negative"),
-        ("Cardiomyopathy NGS Comprehensive", "Pathogenic variant identified: LMNA c.1580G>A (p.Arg527His)", "Pathogenic"),
-        ("Familial Hypercholesterolemia Panel", "Heterozygous pathogenic variant in LDLR gene c.1775G>A", "Pathogenic"),
-        ("Cardiac Amyloidosis TTR Sequencing", "Wild-type TTR; No pathogenic mutation in coding regions", "Normal"),
-        ("Pharmacogenomics CYP2C19 Clopidogrel Panel", "CYP2C19 *1/*2 (Intermediate metabolizer phenotype)", "Abnormal"),
-        ("Long QT Syndrome Targeted Panel", "Variant of uncertain significance: KCNQ1 c.1022G>A", "VUS")
-    ]
+    # --- CASE-1009: Pending Consent ---
+    db.add(Case(
+        case_id="CASE-1009", patient_synthetic_id="PT-1009",
+        age_range="50-59", gender="F", consent_status="Pending",
+        risk_level="Moderate", status="Complete",
+        created_at=now - timedelta(days=1)
+    ))
+    db.flush()
+    db.add(EvidenceEvent(
+        event_id="EVT-1009-PATH", case_id="CASE-1009",
+        modality="Pathology", vendor="Vendor A — CoreLab",
+        test_name="High-Sensitivity Troponin I",
+        result_summary="22 ng/L (Mildly Elevated)",
+        interpretation="Elevated", freshness="Current",
+        event_timestamp=now - timedelta(hours=20),
+        validation_status="Valid"
+    ))
+    db.add(EvidenceEvent(
+        event_id="EVT-1009-IMG", case_id="CASE-1009",
+        modality="Imaging", vendor="Vendor B — CardioVision",
+        test_name="Coronary CT Angiography",
+        result_summary="CAD-RADS 2: Mild non-obstructive coronary disease (25-49%)",
+        interpretation="Mildly Abnormal", freshness="Current",
+        event_timestamp=now - timedelta(hours=14),
+        validation_status="Valid"
+    ))
+    db.add(EvidenceEvent(
+        event_id="EVT-1009-MOL", case_id="CASE-1009",
+        modality="Molecular", vendor="Vendor C — GeneCore",
+        test_name="Ion Channelopathy Panel (SCN5A)",
+        result_summary="No pathogenic variants detected",
+        interpretation="Normal", freshness="Current",
+        event_timestamp=now - timedelta(hours=4),
+        validation_status="Valid"
+    ))
 
-    consent_choices = ["Granted", "Granted", "Granted", "Granted", "Restricted", "Pending"]
-    risk_choices = ["Low", "Moderate", "Moderate", "High"]
-    age_ranges = ["30-39", "40-49", "50-59", "60-69", "70-79"]
+    # --- CASE-1010: Complete — Young Adult ---
+    db.add(Case(
+        case_id="CASE-1010", patient_synthetic_id="PT-1010",
+        age_range="30-39", gender="M", consent_status="Granted",
+        risk_level="Low", status="Complete",
+        created_at=now - timedelta(days=4)
+    ))
+    db.flush()
+    s1010 = Specimen(specimen_id="SPEC-010", case_id="CASE-1010",
+        source="Venous Blood", specimen_type="Whole Blood",
+        collection_timestamp=now - timedelta(days=4))
+    db.add(s1010)
+    db.flush()
+    db.add(EvidenceEvent(
+        event_id="EVT-1010-PATH", case_id="CASE-1010",
+        modality="Pathology", vendor="Vendor A — CoreLab",
+        test_name="High-Sensitivity Troponin I",
+        result_summary="10 ng/L (Reference: < 16 ng/L)",
+        interpretation="Normal", freshness="Current",
+        event_timestamp=now - timedelta(days=3),
+        specimen_id="SPEC-010", validation_status="Valid"
+    ))
+    db.add(EvidenceEvent(
+        event_id="EVT-1010-IMG", case_id="CASE-1010",
+        modality="Imaging", vendor="Vendor B — CardioVision",
+        test_name="Transthoracic Echocardiogram",
+        result_summary="LVEF 65%; normal biventricular function; no valvular abnormality",
+        interpretation="Normal", freshness="Current",
+        event_timestamp=now - timedelta(days=2, hours=6),
+        validation_status="Valid"
+    ))
+    db.add(EvidenceEvent(
+        event_id="EVT-1010-MOL", case_id="CASE-1010",
+        modality="Molecular", vendor="Vendor C — GeneCore",
+        test_name="Arrhythmogenic Cardiomyopathy Panel (PKP2)",
+        result_summary="No pathogenic variants detected",
+        interpretation="Normal", freshness="Current",
+        event_timestamp=now - timedelta(days=1),
+        specimen_id="SPEC-010", validation_status="Valid"
+    ))
 
-    for i in range(1006, 1126):
-        cid = f"CASE-{i}"
-        consent = random.choice(consent_choices)
-        risk = random.choice(risk_choices)
-        age = random.choice(age_ranges)
-        gender = random.choice(["M", "F"])
-
-        created_days_ago = random.randint(2, 60)
-        c_time = now - timedelta(days=created_days_ago)
-
-        status = random.choice(["Complete", "Needs Review", "Needs Review", "Incomplete", "Under Review"])
-
-        case_obj = Case(
-            case_id=cid,
-            patient_synthetic_id=f"SYN-PT-{i}",
-            age_range=age,
-            gender=gender,
-            consent_status=consent,
-            risk_level=risk,
-            status=status,
-            created_at=c_time,
-            updated_at=c_time + timedelta(hours=random.randint(1, 24))
-        )
-        db.add(case_obj)
-        db.flush()
-
-        # Specimen
-        spec_id = f"SPEC-{i}"
-        db.add(Specimen(
-            specimen_id=spec_id,
-            case_id=cid,
-            collection_timestamp=c_time + timedelta(hours=2),
-            source=random.choice(["Venous Blood", "Peripheral Blood", "Biopsy Tissue", "Saliva DNA"]),
-            specimen_type="EDTA Plasma"
-        ))
-
-        # Determine failure injections for realistic distributions:
-        is_missing_mol = (i % 7 == 0)
-        is_stale_path = (i % 8 == 0)
-        is_lineage_err = (i % 23 == 0)
-        is_dup = (i % 20 == 0)
-        is_conflict = (i % 22 == 0)
-
-        # Pathology event 1 (e.g. Troponin)
-        pt_name, pt_res, pt_interp = random.choice(path_tests)
-        path_age = random.randint(35, 70) if is_stale_path else random.randint(1, 6)
-        path_timestamp = now - timedelta(days=path_age)
-        path_fresh = "Very Stale" if path_age > 30 else ("Stale" if path_age > 7 else "Current")
-
-        val_status = "Valid"
-        spec_to_use = f"SPEC-ERR-{random.randint(900, 999)}" if is_lineage_err else spec_id
-        if is_lineage_err:
-            val_status = "Lineage Mismatch"
-
-        db.add(EvidenceEvent(
-            event_id=f"EVT-{i}-PATH",
-            case_id=cid,
-            modality="Pathology",
-            vendor=random.choice(["Vendor A — CoreLab", "Vendor D — BioPulse POC"]),
-            test_name=pt_name,
-            result_summary=pt_res,
-            interpretation=pt_interp,
-            event_timestamp=path_timestamp,
-            freshness=path_fresh,
-            specimen_id=spec_to_use,
-            source_system="LIMS",
-            device_system="Analyzer Auto",
-            validation_status=val_status,
-            review_status="Reviewed" if status == "Complete" else "Unreviewed"
-        ))
-
-        # Pathology event 2 (Biomarker / Lipid Panel)
-        pt2_name, pt2_res, pt2_interp = random.choice(path_tests)
-        db.add(EvidenceEvent(
-            event_id=f"EVT-{i}-PATH-2",
-            case_id=cid,
-            modality="Pathology",
-            vendor="Vendor A — CoreLab",
-            test_name=f"Follow-up {pt2_name}",
-            result_summary=pt2_res,
-            interpretation=pt2_interp,
-            event_timestamp=path_timestamp + timedelta(hours=6),
-            freshness=path_fresh,
-            specimen_id=spec_to_use,
-            source_system="LIMS",
-            device_system="Cobas Analyzer",
-            validation_status=val_status,
-            review_status="Reviewed" if status == "Complete" else "Unreviewed"
-        ))
-
-        # Imaging event 1
-        img_name, img_res, img_interp = random.choice(img_tests)
-        img_age = random.randint(1, 14)
-        db.add(EvidenceEvent(
-            event_id=f"EVT-{i}-IMG",
-            case_id=cid,
-            modality="Imaging",
-            vendor=random.choice(["Vendor B — CardioVision", "Vendor E — UltraEcho"]),
-            test_name=img_name,
-            result_summary=img_res,
-            interpretation=img_interp,
-            event_timestamp=now - timedelta(days=img_age),
-            freshness="Current" if img_age <= 7 else "Stale",
-            source_system="PACS",
-            device_system="Scanner",
-            validation_status="Valid",
-            review_status="Reviewed" if status == "Complete" else "Unreviewed"
-        ))
-
-        # Imaging event 2 (for ~60% of cases)
-        if i % 3 != 0:
-            img2_name, img2_res, img2_interp = random.choice(img_tests)
-            db.add(EvidenceEvent(
-                event_id=f"EVT-{i}-IMG-2",
-                case_id=cid,
-                modality="Imaging",
-                vendor="Vendor B — CardioVision",
-                test_name=f"Confirmatory {img2_name}",
-                result_summary=img2_res,
-                interpretation=img2_interp,
-                event_timestamp=now - timedelta(days=img_age, hours=8),
-                freshness="Current" if img_age <= 7 else "Stale",
-                source_system="PACS",
-                device_system="CardioVision",
-                validation_status="Valid",
-                review_status="Reviewed" if status == "Complete" else "Unreviewed"
-            ))
-
-        # Duplicate injection if triggered
-        if is_dup:
-            db.add(EvidenceEvent(
-                event_id=f"EVT-{i}-IMG", # Duplicate ID
-                case_id=cid,
-                modality="Imaging",
-                vendor="Vendor B — CardioVision",
-                test_name=f"{img_name} (Duplicate Submission)",
-                result_summary=img_res,
-                interpretation=img_interp,
-                event_timestamp=now - timedelta(days=img_age),
-                freshness="Current" if img_age <= 7 else "Stale",
-                source_system="PACS",
-                validation_status="Duplicate",
-                review_status="Flagged"
-            ))
-
-        # Conflict injection if triggered
-        if is_conflict:
-            db.add(EvidenceEvent(
-                event_id=f"EVT-{i}-CONF-X",
-                case_id=cid,
-                modality="Pathology",
-                vendor="Vendor D — BioPulse POC",
-                test_name="Emergency POC Biomarker Strip",
-                result_summary="Conflicting high reading detected",
-                interpretation="Abnormal",
-                event_timestamp=path_timestamp + timedelta(hours=1),
-                freshness=path_fresh,
-                validation_status="Conflicting",
-                review_status="Flagged"
-            ))
-
-        # Molecular event (unless intentionally omitted)
-        if not is_missing_mol:
-            mol_name, mol_res, mol_interp = random.choice(mol_tests)
-            mol_age = random.randint(1, 10)
-            db.add(EvidenceEvent(
-                event_id=f"EVT-{i}-MOL",
-                case_id=cid,
-                modality="Molecular",
-                vendor="Vendor C — GeneCore",
-                test_name=mol_name,
-                result_summary=mol_res,
-                interpretation=mol_interp,
-                event_timestamp=now - timedelta(days=mol_age),
-                freshness="Current" if mol_age <= 7 else "Stale",
-                specimen_id=spec_id,
-                source_system="NGS Core",
-                device_system="NovaSeq",
-                validation_status="Valid",
-                review_status="Reviewed" if status == "Complete" else "Unreviewed"
-            ))
-
-        # Review decision for some cases
-        if status in ["Complete", "Needs Review"]:
-            db.add(ReviewDecision(
-                case_id=cid,
-                reviewer_role=random.choice(["Cardiologist", "Pathologist", "Reviewer"]),
-                reviewer_name=f"Specialist-{random.randint(10, 99)}",
-                status="Complete" if status == "Complete" else "In Review",
-                decision_text=f"Synthetic review entry for {cid}. Multidisciplinary evaluation recorded.",
-                created_at=c_time + timedelta(days=1)
-            ))
+    db.commit()
 
     # Seed initial audit logs
     audit_samples = [
-        ("Administrator", "Database Seeded", "System", "SUCCESS", "Generated initial 100+ cases and 500+ events", None),
+        ("Administrator", "Database Seeded", "System", "SUCCESS", "Initialized 10 clinical cases and multidisciplinary evidence events", None),
         ("Cardiologist", "Case Opened", "CASE-1001", "SUCCESS", "Viewed unified timeline", "CASE-1001"),
         ("Reviewer", "Review Created", "CASE-1001", "SUCCESS", "Marked complete", "CASE-1001"),
         ("Pathologist", "Evidence Viewed", "EVT-1002-PATH", "SUCCESS", "Inspected Troponin T & NT-proBNP", "CASE-1002"),
@@ -697,4 +643,4 @@ def seed_database(db: Session, force: bool = False):
         ))
 
     db.commit()
-    print("Database seeded successfully with 100+ cases and 500+ events.")
+    print("Database seeded successfully with 10 cases.")

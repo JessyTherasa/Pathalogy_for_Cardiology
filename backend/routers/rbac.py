@@ -78,22 +78,22 @@ ALL_CLINICAL = (
 PERM_CASE_BASIC = ALL_CLINICAL
 
 # Full evidence timeline (all modalities visible)
-PERM_TIMELINE_VIEW = ("Cardiologist", "Reviewer")
+PERM_TIMELINE_VIEW = ("Cardiologist", "Reviewer", "Administrator")
 
 # Pathology evidence access
-PERM_PATHOLOGY_VIEW = ("Cardiologist", "Pathologist", "Reviewer")
+PERM_PATHOLOGY_VIEW = ("Cardiologist", "Pathologist", "Reviewer", "Administrator")
 
 # Imaging evidence access
-PERM_IMAGING_VIEW = ("Cardiologist", "Imaging Specialist", "Reviewer")
+PERM_IMAGING_VIEW = ("Cardiologist", "Imaging Specialist", "Reviewer", "Administrator")
 
 # Molecular evidence access
-PERM_MOLECULAR_VIEW = ("Cardiologist", "Molecular Specialist", "Reviewer")
+PERM_MOLECULAR_VIEW = ("Cardiologist", "Molecular Specialist", "Reviewer", "Administrator")
 
 # Specimen lineage access
-PERM_SPECIMEN_VIEW = ("Cardiologist", "Pathologist", "Molecular Specialist", "Reviewer")
+PERM_SPECIMEN_VIEW = ("Cardiologist", "Pathologist", "Molecular Specialist", "Reviewer", "Administrator")
 
 # Review decisions: create/read
-PERM_REVIEW_VIEW = ("Cardiologist", "Reviewer")
+PERM_REVIEW_VIEW = ("Cardiologist", "Reviewer", "Administrator")
 
 # Audit trail access
 PERM_AUDIT_VIEW = ("Cardiologist", "Reviewer", "Administrator")

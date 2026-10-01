@@ -14,10 +14,12 @@ import {
   FileSpreadsheet,
   Activity,
   Wifi,
-  WifiOff
+  WifiOff,
+  PlusCircle,
+  X
 } from 'lucide-react';
 import { CaseItem, DashboardMetrics } from '../types';
-import { getCases, getDashboardMetrics } from '../services/api';
+import { getCases, getDashboardMetrics, createCase } from '../services/api';
 import { useRole } from '../context/RoleContext';
 import { FreshnessDot } from '../components/common/FreshnessDot';
 import { Badge } from '../components/common/Badge';
@@ -42,6 +44,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectCase }) => {
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Add Case modal state
+  const [showAddCase, setShowAddCase] = useState(false);
+  const [addCaseForm, setAddCaseForm] = useState({ age_range: '40-49', gender: 'M', risk_level: 'Moderate', consent_status: 'Granted' });
+  const [addCaseLoading, setAddCaseLoading] = useState(false);
+  const [addCaseResult, setAddCaseResult] = useState<string | null>(null);
 
   const API = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
   const WS_URL = API.replace('http', 'ws') + '/ws/events';
@@ -101,6 +109,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectCase }) => {
   }, [currentRole]);
 
   const { isConnected: wsConnected } = useWebSocket({ url: WS_URL, onMessage: handleWsMessage });
+
+  const handleAddCase = async () => {
+    setAddCaseLoading(true);
+    setAddCaseResult(null);
+    try {
+      const res = await createCase(addCaseForm);
+      setShowAddCase(false);
+      loadData();
+      if (res.case_id) onSelectCase(res.case_id);
+    } catch (e: any) {
+      setAddCaseResult(`Error: ${e.message}`);
+    } finally {
+      setAddCaseLoading(false);
+    }
+  };
 
   const demoCases = [
     {
@@ -192,7 +215,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectCase }) => {
           <span className="text-2xl font-black text-slate-900 mt-1 block">
             {metrics?.total_cases ?? '—'}
           </span>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">Synthetic cohort</span>
+          <span className="text-[11px] text-slate-400 mt-0.5 block">All registered cases</span>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-sm">
@@ -412,6 +435,56 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectCase }) => {
         </div>
       </div>
 
+      {/* Add Case Modal */}
+      {showAddCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-black text-slate-900">Add New Case</h3>
+              <button onClick={() => setShowAddCase(false)} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+            </div>
+            <div className="space-y-4 text-sm">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Age Range</label>
+                <select value={addCaseForm.age_range} onChange={e => setAddCaseForm(f => ({...f, age_range: e.target.value}))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500">
+                  {['20-29','30-39','40-49','50-59','60-69','70-79','80+'].map(r => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Gender</label>
+                <select value={addCaseForm.gender} onChange={e => setAddCaseForm(f => ({...f, gender: e.target.value}))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500">
+                  <option value="M">Male</option><option value="F">Female</option><option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Risk Level</label>
+                <select value={addCaseForm.risk_level} onChange={e => setAddCaseForm(f => ({...f, risk_level: e.target.value}))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500">
+                  <option>Low</option><option>Moderate</option><option>High</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Consent Status</label>
+                <select value={addCaseForm.consent_status} onChange={e => setAddCaseForm(f => ({...f, consent_status: e.target.value}))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500">
+                  <option>Granted</option><option>Pending</option><option>Restricted</option>
+                </select>
+              </div>
+              {addCaseResult && <p className="text-rose-600 text-xs">{addCaseResult}</p>}
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowAddCase(false)} className="flex-1 py-2 border border-slate-300 rounded-lg text-slate-700 text-sm font-semibold hover:bg-slate-50">Cancel</button>
+                <button onClick={handleAddCase} disabled={addCaseLoading}
+                  className="flex-1 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50">
+                  {addCaseLoading ? 'Creating...' : 'Create Case'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Case Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
@@ -423,7 +496,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectCase }) => {
               Click any case row to launch the multidisciplinary case workspace
             </span>
           </div>
-          <span className="text-xs text-slate-500 font-mono">Role: {currentRole}</span>
+          <button
+            onClick={() => { setAddCaseResult(null); setShowAddCase(true); }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
+          >
+            <PlusCircle size={13} /> Add Case
+          </button>
         </div>
 
         {loading ? (
